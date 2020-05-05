@@ -40,7 +40,7 @@ def sliceTiles(volume, tileSize):
 print("generate X")
 # X = randomSlices(mrHead, 70 * 1000, [32,32])
 # labels = list(map(str, list(numpy.random.random_integers(0,10,len(z)))))
-tileSize = 16
+tileSize = 32
 X, labels = sliceTiles(mrHead, tileSize)
 # print(X, labels)
 
@@ -59,7 +59,7 @@ importlib.reload(cvae)
 embedder = cvae.CompressionVAE(
     X,
     train_valid_split=0.99,
-    dim_latent=5,
+    dim_latent=50,
     #iaf_flow_length=10,
     # cells_encoder=[512, 256, 128],
     #initializer='lecun_normal',
@@ -70,7 +70,7 @@ embedder = cvae.CompressionVAE(
     tb_logging=True)
 embedder.train(
     learning_rate=1e-4,
-    num_steps=int(10e5),
+    num_steps=int(10e4),
     #dropout_keep_prob=0.6,
     test_every=50,
     lr_scheduling=False)
@@ -85,6 +85,20 @@ X_reconstructed = embedder.decode(z)
 recontstructedTileArray = X_reconstructed.reshape(tileArray.shape)
 recontstructedTileVolume = slicer.util.addVolumeFromArray(recontstructedTileArray)
 recontstructedTileVolume.SetName("Reconstructed Tiles")
+
+layoutManager = slicer.app.layoutManager()
+redWidget = layoutManager.sliceWidget('Red')
+redComposite = redWidget.mrmlSliceCompositeNode()
+redComposite.SetBackgroundVolumeID(tileVolume.GetID())
+redComposite.SetLinkedControl(True)
+redComposite.SetHotLinkedControl(True)
+redWidget.mrmlSliceNode().SetOrientationToAxial()
+yellowWidget = layoutManager.sliceWidget('Yellow')
+yellowComposite = yellowWidget.mrmlSliceCompositeNode()
+yellowComposite.SetBackgroundVolumeID(recontstructedTileVolume.GetID())
+yellowComposite.SetLinkedControl(True)
+yellowComposite.SetHotLinkedControl(True)
+yellowWidget.mrmlSliceNode().SetOrientationToAxial()
 
 # not used, but maybe handy some day
 def randomSlices(volume, sliceCount, sliceShape):
